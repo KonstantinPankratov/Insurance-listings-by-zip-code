@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Insurance</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="assets/css/bulma.min.css">
+	<link rel="stylesheet" type="text/css" href="assets/css/style.css">
+</head>
+<body>
+	<div class="container main">
+		<form id="main-form">
+			<div class="field has-addons">
+				<div class="control is-input">
+					<input class="input" type="text" placeholder="Zip code" name="zip" required>
+				</div>
+			</div>
+			<div class="field">
+				<div class="control">
+					<label>Currently Insured?</label>
+					<label class="radio">
+					<input type="radio" name="ci" required value="1">
+						Yes
+					</label>
+					<label class="radio">
+					<input type="radio" name="ci" required value="0" checked>
+						No
+					</label>
+				</div>
+			</div>
+			<div class="field">
+				<div class="control">
+					<label>Are Homeowner?</label>
+					<label class="radio">
+					<input type="radio" name="homeowner" required value="1">
+						Yes
+					</label>
+					<label class="radio">
+					<input type="radio" name="homeowner" required value="0" checked>
+						No
+					</label>
+				</div>
+			</div>
+			<div class="field">
+				<label>Your age?</label>
+				<div class="select">
+					<select name="age" id="age" required></select>
+				</div>
+			</div>
+			<div class="control">
+				<button class="button is-info" type="submit">GO</button>
+			</div>
+		</form>
+
+		<h4 class="title is-4 results-title">Your search returned these results:</h4>
+
+		<div id="content">
+			<div class="box">
+			  <article class="media">
+			    <div class="media-content">
+			      <div class="content is-loading">
+			        <p>Results will be displayed here.</p>
+			      </div>
+			    </div>
+			  </article>
+			</div>
+		</div>
+	</div>
+	<script type="text/javascript" src="assets/js/API.js"></script>
+	<script type="text/javascript" src="assets/js/form-handler.js"></script>
+	<script type="text/javascript">
+		var parent;
+
+		window.addEventListener('load', function() {
+			parent = document.getElementById('content');
+			run();
+		}, false);
+
+		/*
+		 * Creates HTML markup for listings
+		 */
+		function create (company_title, company_description, company_logo, company_url) {
+			var box = document.createElement('div');
+				box.classList.add('box');
+
+				var media = document.createElement('div');
+					media.classList.add('media');
+
+				var media_content = document.createElement('div');
+					media_content.classList.add('media_content');
+
+				var content = document.createElement('div');
+					content.classList.add('content');
+
+				/* LOGO START */
+
+				if (company_logo) {
+					var media_left = document.createElement('div');
+						media_left.classList.add('media-left');
+
+					var figure = document.createElement('figure');
+						figure.classList.add('image', 'is-64');
+
+					var image = document.createElement('img');
+						image.src = 'http:' + company_logo;
+						image.alt = company_title;
+					
+					figure.appendChild(image);
+					media_left.appendChild(figure);
+				}
+
+				/* LOGO END */
+
+				if (company_title) {
+					var title = document.createElement('h5');
+						title.innerText = company_title;
+					content.appendChild(title);
+				}
+				
+				if (company_description) {
+					var list = document.createElement('div');
+						list.innerHTML = company_description;
+					content.appendChild(list);
+				}
+
+				if (company_url) {
+					var button = document.createElement('a');
+						button.classList.add('button', 'is-info', 'is-link');
+						button.href = company_url;
+						button.target = '_blank';
+						button.innerText = 'Visit website';
+					content.appendChild(button);	
+				}
+					
+				media_content.appendChild(content);
+
+				if (company_logo)
+					media.appendChild(media_left);
+
+				media.appendChild(media_content);
+				box.appendChild(media);
+
+			return box;
+		}
+
+		/*
+		 * Run the whole script
+		 */
+		function run(zip, ci, homeowner, age) {
+			parent.innerHTML = '';
+			parent.classList.add('is-loading');
+
+			setTimeout(function() {
+				var userinfo = user_info();
+
+				var location = window.location.href;
+					url = new URL(location);
+
+				if (!zip) {
+					zip = userinfo.zip;
+
+					if (url.searchParams.get("zip"))
+						zip = url.searchParams.get("zip");
+				}
+
+				if (!ci && !homeowner && !age) {
+					ci        = 0;
+					homeowner = 0;
+					age       = 18;
+
+					if (url.searchParams.get("ci"))
+						ci = url.searchParams.get("ci");
+
+					if (url.searchParams.get("homeowner"))
+						homeowner = url.searchParams.get("homeowner");
+
+					if (url.searchParams.get("age"))
+						age = url.searchParams.get("age");
+				}
+
+				var ip 	= userinfo.ip;
+				var ref = window.location.href;
+
+				var data = get_data(zip, ip, ref);
+
+				display(data.listings);
+
+				parent.classList.remove('is-loading');
+			}, 10);
+		}
+
+		/*
+		 * Displays listings from API
+		 */
+		function display( listings ) {
+			if (listings.length == 0) {
+				var box = create( undefined, 'No results. Try another <strong>Zip code</strong>' );
+				parent.appendChild(box);
+			}
+
+			for (var i = 0; i < listings.length; i++) {
+				var box = create( listings[i].listingTitle, listings[i].listingDescription, listings[i].logo, listings[i].linkbtn.btnclickurl );
+					parent.appendChild(box);
+			}
+		}
+
+		/*
+		 * Generates options in select from 1 to amount
+		 */
+		function age_select(amount){
+			var select = document.getElementById('age');
+			for (var i = 0; i < amount; i++){
+				select.options[select.options.length] = new Option(i+1, i+1);
+			}
+		}
+		age_select(99);
+
+	</script>
+</body>
+</html>
